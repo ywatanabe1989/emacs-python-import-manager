@@ -3,10 +3,10 @@
 An Emacs package that automatically manages Python imports
 
 ## Demo
-![Demo](./docs/demo.gif)
+<img src="./docs/demo.gif" width="800" alt="./docs/demo.gif">
 
-([`demo_before.py`](./docs/demo_before.py))
-([`demo_after.py`](./docs/demo_after.py))
+[`demo_before.py`](./docs/demo_before.py) >>> [`demo_after.py`](./docs/demo_after.py)
+
 
 ## Usage
 
