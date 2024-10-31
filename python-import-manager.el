@@ -1,3 +1,7 @@
+;;; -*- lexical-binding: t -*-
+;;; Author: ywatanabe
+;;; Time-stamp: <2024-11-01 02:20:39 (ywatanabe)>
+;;; File: ./python-import-manager/python-import-manager.el
 ;; Copyright (C) 2024 ywatanabe
 
 ;; Author: Yusuke Watanabe (ywatanabe@alumni.u-tokyo.ac.jp)
@@ -121,6 +125,31 @@
     (delete-file temp-file)
     undefined-list))
 
+;; (defun pim--find-unused-modules ()
+;;   "Find unused modules from flake8 output."
+;;   (let* ((temp-file (pim--copy-contents-as-temp-file))
+;;          (output (pim--get-flake8-output temp-file '("--select=F401")))
+;;          modules)
+;;     (with-temp-buffer
+;;       (insert output)
+;;       (goto-char (point-min))
+;;       (while (re-search-forward "F401 '\\([^']+\\)' imported but unused" nil t)
+;;         (push (car (last (split-string (match-string 1) "\\."))) modules)))
+;;     (delete-file temp-file)
+;;     modules))
+
+;; (defun pim--find-unused-modules ()
+;;   "Find unused modules from flake8 output."
+;;   (let* ((temp-file (pim--copy-contents-as-temp-file))
+;;          (output (pim--get-flake8-output temp-file '("--select=F401")))
+;;          modules)
+;;     (with-temp-buffer
+;;       (insert output)
+;;       (goto-char (point-min))
+;;       (while (re-search-forward "F401 '\\([^']+\\)' imported but unused" nil t)
+;;         (push (match-string 1) modules)))
+;;     (delete-file temp-file)
+;;     modules))
 (defun pim--find-unused-modules ()
   "Find unused modules from flake8 output."
   (let* ((temp-file (pim--copy-contents-as-temp-file))
@@ -130,13 +159,25 @@
       (insert output)
       (goto-char (point-min))
       (while (re-search-forward "F401 '\\([^']+\\)' imported but unused" nil t)
-        (push (car (last (split-string (match-string 1) "\\."))) modules)))
+        (let ((module (match-string 1)))
+          (push (if (string-match "\\([^.]+\\)$" module)
+                    (match-string 1 module)
+                  module)
+                modules))))
     (delete-file temp-file)
     modules))
+
 
 (defun pim--remove-module (module)
   "Remove specific MODULE from import lines."
   (save-excursion
+    (goto-char (point-min))
+    ;; Remove 'import module' lines
+    (while (re-search-forward "^import .*$" nil t)
+      (when (string-match-p (format "\\b%s\\b" module) 
+                           (match-string 0))
+        (kill-whole-line)))
+    ;; Remove 'from ... import' lines
     (goto-char (point-min))
     (while (re-search-forward "^from .* import.*$" nil t)
       (let* ((line (buffer-substring-no-properties
@@ -200,14 +241,6 @@
               (kill-whole-line)
             (puthash line t imports)))))))
 
-;; ;;;###autoload
-;; (defun pim-fix-imports ()
-;;   "Fix imports in current buffer."
-;;   (interactive)
-;;   (pim-delete-unused)
-;;   (pim-insert-missed)
-;;   (pim-delete-duplicated))
-
 ;; isort
 (defun pim--find-isort ()
   "Find isort executable."
@@ -250,3 +283,6 @@
 (provide 'python-import-manager)
 
 ;;; python-import-manager.el ends here
+
+
+(message "%s was loaded." (file-name-nondirectory (or load-file-name buffer-file-name)))
