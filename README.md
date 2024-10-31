@@ -36,18 +36,31 @@ git clone git@github.com:ywatanabe1989/python-import-manager.git ~/.emacs.d/lisp
 ## Customization
 
 ```elisp
-;; Custom flake8 path
-(setq pim-flake8-path "/path/to/flake8")
+;;; -*- lexical-binding: t -*-
+;;; Author: ywatanabe
+;;; Time-stamp: <2024-11-01 01:49:39 (ywatanabe)>
+;;; File: ./.dotfiles/.emacs.d/inits/300-python/300-python-pim.el
 
-;; Custom flake8 arguments
-(setq pim-flake8-args '("--max-line-length=100" "--select=F401,F821" "--isolated"))
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/lisp/python-import-manager/"))
+(require 'python-import-manager)
 
-;; Custom import aliases
+(setq pim-python-path (expand-file-name "~/.env-3.11/bin/python3"))
+(setq pim-flake8-path (expand-file-name "~/.env-3.11/bin/flake8"))
+(setq pim-isort-path (expand-file-name "~/.env-3.11/bin/isort"))
 (setq pim-import-aliases
-      '(("numpy" . "np")
-        ("pandas" . "pd")
-        ("matplotlib.pyplot" . "plt")
-        ("seaborn" . "sns")))
+      (append pim-import-aliases
+             '(("numpy" . "np")
+               ("pandas" . "pd")
+               ("matplotlib.pyplot" . "plt")
+               ("seaborn" . "sns")
+               ("mngs" . "mngs")
+               ("scripts.utils" . "utils"))))
+
+(add-hook 'python-mode-hook
+          (lambda ()
+          (pim-auto-mode 1)))
+
+(message "%s was loaded." (file-name-nondirectory (or load-file-name buffer-file-name)))
 ```
 
 ## License

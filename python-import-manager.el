@@ -1,6 +1,6 @@
 ;;; -*- lexical-binding: t -*-
 ;;; Author: ywatanabe
-;;; Time-stamp: <2024-10-31 23:58:28>
+;;; Time-stamp: <2024-11-01 01:47:50 (ywatanabe)>
 ;;; File: ./python-import-manager/python-import-manager.el
 
 ;;; python-import-manager.el --- Manage Python imports automatically -*- lexical-binding: t -*-
@@ -37,6 +37,7 @@
 (unless (fboundp 'json-read)
   (require 'json-mode))
 (require 'seq)
+(require 'python)
 
 (defgroup python-import-manager nil
   "Management of Python imports."
@@ -50,6 +51,13 @@
       (add-hook 'before-save-hook #'pim-fix-imports nil t)
     (remove-hook 'before-save-hook #'pim-fix-imports t)))
 
+(defcustom pim-python-path
+  (or python-shell-interpreter
+      (executable-find "python3"))
+  "Path to python executable."
+  :type 'string
+  :group 'python-import-manager)
+      
 (defcustom pim-flake8-path
   (executable-find "flake8")
   "Path to flake8 executable."
@@ -62,6 +70,18 @@
   :type '(repeat string)
   :group 'python-import-manager)
 
+(defcustom pim-isort-path
+  (executable-find "isort")
+  "Path to isort executable."
+  :type 'string
+  :group 'python-import-manager)
+
+(defcustom pim-isort-args
+  '("--profile" "black" "--line-length" "100")
+  "Arguments to pass to isort."
+  :type '(repeat string)
+  :group 'python-import-manager)
+
 (defcustom pim-import-aliases
   '(("numpy" . "np")
     ("pandas" . "pd")
@@ -71,6 +91,7 @@
   :type '(alist :key-type string :value-type string)
   :group 'python-import-manager)
 
+
 (defun pim--find-flake8 ()
   "Find flake8 executable."
   (or pim-flake8-path
@@ -79,7 +100,7 @@
 
 (defun pim--copy-contents-as-temp-file ()
   "Copy current buffer to temp file and return the filename."
-  (let ((temp-file (make-temp-file "flake8-")))
+  (let ((temp-file (make-temp-file "pim-")))
     (write-region (point-min) (point-max) temp-file)
     temp-file))
 
@@ -166,8 +187,12 @@
         (when (re-search-forward "^import\\|^from" nil t)
           (beginning-of-line)
           (dolist (name undefined-names)
-            (insert (format "from %s import %s\n"
-                           (downcase name) name))))))))
+            (let* ((module (rassoc name pim-import-aliases))
+                   (import-line
+                    (if module
+                        (format "import %s as %s\n" (car module) (cdr module))
+                      (format "from %s import %s\n" (downcase name) name))))
+              (insert import-line))))))))
 
 ;;;###autoload
 (defun pim-delete-duplicates ()
@@ -182,13 +207,48 @@
               (kill-whole-line)
             (puthash line t imports)))))))
 
-;;;###autoload
+;; ;;;###autoload
+;; (defun pim-fix-imports ()
+;;   "Fix imports in current buffer."
+;;   (interactive)
+;;   (pim-delete-unused)
+;;   (pim-insert-missing)
+;;   (pim-delete-duplicates))
+
+;; isort
+(defun pim--find-isort ()
+  "Find isort executable."
+  (interactive)
+  (or pim-isort-path
+      (executable-find "isort")
+      (user-error "Cannot find isort. Please install it or set pim-isort-path")))
+
+(defun pim--get-isort-output (temp-file &optional args)
+  "Run isort on TEMP-FILE with optional ARGS and return output."
+  (let ((isort-path (pim--find-isort)))
+    (with-temp-buffer
+      (apply #'call-process isort-path nil t nil
+             (append (or args pim-isort-args) (list temp-file)))
+      (buffer-string))))
+
+(defun pim--run-isort ()
+  "Sort imports using isort."
+  (interactive)
+  (let* ((temp-file (pim--copy-contents-as-temp-file)))
+    (pim--get-isort-output temp-file)
+    (erase-buffer)
+    (insert-file-contents temp-file)
+    (delete-file temp-file)))
+
 (defun pim-fix-imports ()
   "Fix imports in current buffer."
   (interactive)
-  (pim-delete-unused)
-  (pim-insert-missing)
-  (pim-delete-duplicates))
+  (let ((original-point (point)))
+    (pim-delete-unused)
+    (pim-insert-missing)
+    (pim-delete-duplicates) 
+    (pim--run-isort)
+    (goto-char original-point)))
 
 ;;;###autoload
 (defalias 'pim 'pim-fix-imports)
