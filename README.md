@@ -5,10 +5,12 @@ An Emacs package that automatically manages Python imports
 ## Usage
 
 | Command | Description |
-|---|---|
-| `M-x pim-fix-imports` or `M-x pim` | Remove unused imports, add missing imports, and remove duplicate imports |
-| `M-x pim-insert-missing` | Add missing imports |
-| `M-x pim-delete-duplicates` | Remove duplicate imports |
+|---------|-------------|
+| `M-x pim` | Fix all imports and sort |
+| `M-x pim-delete-unused` | Remove unused imports |
+| `M-x pim-insert-missed` | Add missing imports |
+| `M-x pim-delete-duplicated` | Remove duplicate imports |
+| `M-x pim-isort` | Sort imports using isort |
 | `M-x pim-auto-mode` | Toggle automatic import fixing on save |
 
 ## Requirements
