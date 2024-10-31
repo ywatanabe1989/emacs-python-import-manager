@@ -17,15 +17,16 @@ An Emacs package that automatically manages Python imports
 
 - Emacs 26.1 or later
 - flake8 (Python package)
+- isort (Python package)
 
 ## Installation
 
-1. Install flake8:
+1. Install flake8 and isort:
 ```bash
-pip install flake8
+pip install flake8 isort
 ```
 
-2. Clone the repository:
+2. Clone the repository or place [`python-import-manager.el`](python-import-manager.el) to your loadpath:
 ```bash
 git clone git@github.com:ywatanabe1989/python-import-manager.git ~/.emacs.d/lisp/python-import-manager
 ```
