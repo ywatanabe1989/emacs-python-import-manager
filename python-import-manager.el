@@ -1,10 +1,3 @@
-;;; -*- lexical-binding: t -*-
-;;; Author: ywatanabe
-;;; Time-stamp: <2024-11-01 01:47:50 (ywatanabe)>
-;;; File: ./python-import-manager/python-import-manager.el
-
-;;; python-import-manager.el --- Manage Python imports automatically -*- lexical-binding: t -*-
-
 ;; Copyright (C) 2024 ywatanabe
 
 ;; Author: Yusuke Watanabe (ywatanabe@alumni.u-tokyo.ac.jp)
@@ -177,7 +170,7 @@
     (pim--cleanup-imports)))
 
 ;;;###autoload
-(defun pim-insert-missing ()
+(defun pim-insert-missed ()
   "Insert missing imports."
   (interactive)
   (let ((undefined-names (pim--find-undefined)))
@@ -195,7 +188,7 @@
               (insert import-line))))))))
 
 ;;;###autoload
-(defun pim-delete-duplicates ()
+(defun pim-delete-duplicated ()
   "Remove duplicate import statements."
   (interactive)
   (save-excursion
@@ -212,8 +205,8 @@
 ;;   "Fix imports in current buffer."
 ;;   (interactive)
 ;;   (pim-delete-unused)
-;;   (pim-insert-missing)
-;;   (pim-delete-duplicates))
+;;   (pim-insert-missed)
+;;   (pim-delete-duplicated))
 
 ;; isort
 (defun pim--find-isort ()
@@ -231,7 +224,7 @@
              (append (or args pim-isort-args) (list temp-file)))
       (buffer-string))))
 
-(defun pim--run-isort ()
+(defun pim-isort ()
   "Sort imports using isort."
   (interactive)
   (let* ((temp-file (pim--copy-contents-as-temp-file)))
@@ -240,14 +233,15 @@
     (insert-file-contents temp-file)
     (delete-file temp-file)))
 
+;;;###autoload
 (defun pim-fix-imports ()
   "Fix imports in current buffer."
   (interactive)
   (let ((original-point (point)))
     (pim-delete-unused)
-    (pim-insert-missing)
-    (pim-delete-duplicates) 
-    (pim--run-isort)
+    (pim-insert-missed)
+    (pim-delete-duplicated) 
+    (pim-isort)
     (goto-char original-point)))
 
 ;;;###autoload
@@ -256,5 +250,3 @@
 (provide 'python-import-manager)
 
 ;;; python-import-manager.el ends here
-
-(message "%s was loaded." (file-name-nondirectory (or load-file-name buffer-file-name)))
