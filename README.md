@@ -1,11 +1,10 @@
 # Python import manager for Emacs
 
-An Emacs package that automatically manages Python imports: removes unused imports, adds missing ones, and eliminates duplicates.
+An Emacs package that automatically manages Python imports
 
 ## Usage
 
-- `M-x pim` (alias for `pim-fix-imports`): Fix all imports
-- `pim` (or `pim-fix-imports`) includes:
+- `M-x pim` or `M-x pim-fix-imports` fix all imports, including:
   - `M-x pim-delete-unused`: Remove unused imports
   - `M-x pim-insert-missing`: Add missing imports
   - `M-x pim-delete-duplicates`: Remove duplicate imports
