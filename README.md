@@ -4,13 +4,13 @@ An Emacs package that automatically manages Python imports
 
 ## Usage
 
-| Command | Description |
-|---------|-------------|
-| `M-x pim` or `M-x pim-fix-imports` | Remove unused imports, add missing imports, and remove duplicate imports |
-| `M-x pim-delete-unused` | Remove unused imports |
-| `M-x pim-insert-missing` | Add missing imports |
-| `M-x pim-delete-duplicates` | Remove duplicate imports |
-| `M-x pim-auto-mode` | Toggle automatic import fixing on save |
+| Command                     | Description                                                              |
+|-----------------------------+--------------------------------------------------------------------------|
+| `M-x pim`                   | Remove unused imports, add missing imports, and remove duplicate imports |
+| `M-x pim-fix-imports`       |                                                                          |
+| `M-x pim-insert-missing`    | Add missing imports                                                      |
+| `M-x pim-delete-duplicates` | Remove duplicate imports                                                 |
+| `M-x pim-auto-mode`         | Toggle automatic import fixing on save                                   |
 
 ## Requirements
 
