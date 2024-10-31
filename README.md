@@ -1,8 +1,3 @@
----
-title: README
-author: ywatanabe
-date: 2024-11-01 00:01:26
----
 # Python import manager for Emacs
 
 An Emacs package that automatically manages Python imports: removes unused imports, adds missing ones, and eliminates duplicates.
