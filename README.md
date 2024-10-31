@@ -2,6 +2,12 @@
 
 An Emacs package that automatically manages Python imports
 
+## Demo
+![Demo](./docs/demo.gif)
+
+([`demo_before.py`](./docs/demo_before.py))
+([`demo_after.py`](./docs/demo_after.py))
+
 ## Usage
 
 | Command | Description |
@@ -69,5 +75,3 @@ git clone git@github.com:ywatanabe1989/python-import-manager.git ~/.emacs.d/lisp
 ## License
 
 GPL-3.0 or later
-
-
