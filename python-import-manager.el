@@ -1,7 +1,7 @@
 ;;; -*- lexical-binding: t -*-
 ;;; Author: ywatanabe
-;;; Time-stamp: <2024-10-31 23:50:44>
-;;; File: ./.dotfiles/.emacs.d/lisp/python-import-manager/python-import-manager.el
+;;; Time-stamp: <2024-10-31 23:58:28>
+;;; File: ./python-import-manager/python-import-manager.el
 
 ;;; python-import-manager.el --- Manage Python imports automatically -*- lexical-binding: t -*-
 
@@ -56,7 +56,7 @@
   :type 'string
   :group 'python-import-manager)
 
-(defcustom pim--flake8-args
+(defcustom pim-flake8-args
   '("--max-line-length=100" "--select=F401,F821" "--isolated")
   "Arguments to pass to flake8."
   :type '(repeat string)
@@ -88,7 +88,7 @@
   (let ((flake8-path (pim--find-flake8)))
     (with-temp-buffer
       (apply #'call-process flake8-path nil t nil
-             (append (or args pim--flake8-args) (list temp-file)))
+             (append (or args pim-flake8-args) (list temp-file)))
       (buffer-string))))
 
 (defun pim--find-undefined ()
