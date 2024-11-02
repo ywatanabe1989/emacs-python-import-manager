@@ -1,7 +1,8 @@
 ;;; -*- lexical-binding: t -*-
 ;;; Author: ywatanabe
-;;; Time-stamp: <2024-11-02 22:56:21>
+;;; Time-stamp: <2024-11-03 03:46:06 (ywatanabe)>
 ;;; File: ./python-import-manager/python-import-manager.el
+
 
 ;; Author: Yusuke Watanabe (ywatanabe@alumni.u-tokyo.ac.jp)
 ;; Version: 1.0.0
@@ -124,6 +125,7 @@
 
     ;; Debugging
     ("ipdb" . "import ipdb")
+    ("get_ipython" . "from IPython import get_ipython")
 
     ;; Collections
     ("defaultdict" . "from collections import defaultdict")
@@ -262,6 +264,9 @@
 
     ;; Custom Libraries
     ("mngs" . "import mngs")
+    ("printc" . "import mngs.str import printc")    
+    ;; ("load" . "from mngs.io import load")
+    ;; ("save" . "from mngs.io import save")    
     ("torch_fn" . "from mngs.decorators import torch_fn")
     ("numpy_fn" . "from mngs.decorators import numpy_fn")
     ("pandas_fn" . "from mngs.decorators import pandas_fn")
@@ -477,6 +482,28 @@
 ;;         (goto-char (point-min))
 ;;         (while (re-search-forward "\n\n\n+" nil t)
 ;;           (replace-match "\n\n"))))))
+
+
+;; Implement pim--find-header-end
+
+
+;;;###autoload
+(defun pim--find-header-end ()
+  "Find the end position of the header comment section in a Python file.
+Header is defined as consecutive comment lines starting from the beginning."
+  (save-excursion
+    (goto-char (point-min))
+    (let ((end-pos (point-min)))
+      (while (and (not (eobp))
+                  (looking-at "^#"))
+        (setq end-pos (line-end-position))
+        (forward-line 1))
+      ;; Skip empty lines after comments
+      (while (and (not (eobp))
+                  (looking-at "^$"))
+        (setq end-pos (line-end-position))
+        (forward-line 1))
+      (1+ end-pos))))
 
 ;;;###autoload
 (defun pim--find-import-position (name current-offset)
