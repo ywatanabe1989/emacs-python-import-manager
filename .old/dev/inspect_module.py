@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-10-31 22:45:00 (ywatanabe)"
-# File: ./.dotfiles/.emacs.d/lisp/python-import-manager/inspect_module.py
-
+# Time-stamp: "2024-11-02 00:49:55 (ywatanabe)"
+# File: ./python-import-manager/dev/inspect_module.py
 import inspect
-import sys
-from typing import Optional, Set, List, Tuple
+from typing import List, Optional, Set
+
 import pandas as pd
+
 
 def inspect_module(
     module: object,
@@ -14,6 +14,7 @@ def inspect_module(
     max_depth: int = 5,
     visited: Optional[Set[str]] = None,
     current_depth: int = 0,
+    sort_by: List[str] = ['Type', 'Name']  # Added sorting
 ) -> pd.DataFrame:
     """Inspect module contents recursively."""
     if visited is None:
@@ -48,6 +49,12 @@ def inspect_module(
         elif inspect.isclass(obj):
             content_list.append(('C', full_name, "", current_depth))
 
-    return pd.DataFrame(content_list, columns=['Type', 'Name', 'Docstring', 'Depth'])
+    df = pd.DataFrame(content_list, columns=['Type', 'Name', 'Docstring', 'Depth'])
+    return df.sort_values(sort_by)  # Added sorting
+
+if __name__ == '__main__':
+    import mngs
+    inspect_module(mngs)
+
 
 # EOF
