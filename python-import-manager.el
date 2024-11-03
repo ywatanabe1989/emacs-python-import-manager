@@ -1,6 +1,6 @@
 ;;; -*- lexical-binding: t -*-
 ;;; Author: ywatanabe
-;;; Time-stamp: <2024-11-03 03:46:06 (ywatanabe)>
+;;; Time-stamp: <2024-11-04 02:53:40 (ywatanabe)>
 ;;; File: ./python-import-manager/python-import-manager.el
 
 
@@ -99,6 +99,7 @@
     ("product" . "from itertools import product")
     ("functools" . "import functools")
     ("partial" . "from functools import partial")
+    ("wraps" . "from functools import wraps")    
     ("math" . "import math")
     ("sys" . "import sys")
     ("random" . "import random")
@@ -117,11 +118,13 @@
     ("Tuple" . "from typing import Tuple")
     ("Dict" . "from typing import Dict")
     ("Any" . "from typing import Any")
+    ("_Any" . "from typing import Any as _Any")    
     ("Union" . "from typing import Union")
     ("Sequence" . "from typing import Sequence")
     ("Literal" . "from typing import Literal")
     ("Optional" . "from typing import Optional")
     ("Iterable" . "from typing import Iterable")
+    ("Callable" . "from typing import Callable")    
 
     ;; Debugging
     ("ipdb" . "import ipdb")
@@ -138,6 +141,7 @@
     ("np" . "import numpy as np")
     ("pd" . "import pandas as pd")
     ("xr" . "import xarray as xr")
+    ("xarray" . "import xarray")    
     ("scipy" . "import scipy")
     ("stats" . "from scipy import stats")
     ("dask" . "import dask.dataframe as dd")
