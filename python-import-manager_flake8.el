@@ -1,6 +1,6 @@
 ;;; -*- lexical-binding: t -*-
 ;;; Author: ywatanabe
-;;; Time-stamp: <2024-11-05 04:21:20 (ywatanabe)>
+;;; Time-stamp: <2024-11-04 02:53:40 (ywatanabe)>
 ;;; File: ./python-import-manager/python-import-manager.el
 
 
@@ -60,27 +60,15 @@
   :type 'string
   :group 'python-import-manager)
 
-;; (defcustom pim-flake8-path
-;;   (executable-find "flake8")
-;;   "Path to flake8 executable."
-;;   :type 'string
-;;   :group 'python-import-manager)
-
-;; (defcustom pim-flake8-args
-;;   '("--max-line-length=100" "--select=F401,F821" "--isolated")
-;;   "Arguments to pass to flake8."
-;;   :type '(repeat string)
-;;   :group 'python-import-manager)
-
-(defcustom pim-ruff-path
-  (executable-find "ruff")
-  "Path to ruff executable."
+(defcustom pim-flake8-path
+  (executable-find "flake8")
+  "Path to flake8 executable."
   :type 'string
   :group 'python-import-manager)
 
-(defcustom pim-ruff-args
-  '("check" "--select=F401,F821" "--isolated")
-  "Arguments to pass to ruff."
+(defcustom pim-flake8-args
+  '("--max-line-length=100" "--select=F401,F821" "--isolated")
+  "Arguments to pass to flake8."
   :type '(repeat string)
   :group 'python-import-manager)
 
@@ -295,92 +283,49 @@
   :group 'python-import-manager)
 
 
-;; (defun pim--copy-contents-as-temp-file ()
-;;   "Copy current buffer to temp file and return the filename."
-;;   (let ((temp-file (make-temp-file "pim-")))
-;;     (write-region (point-min) (point-max) temp-file)
-;;     temp-file))
-
-
-
-(defun pim--copy-contents-as-temp-file ()
-  "Copy current buffer to temp file and return the filename."
-  (let ((temp-file (make-temp-file "pim-" nil ".py")))
-    (write-region (point-min) (point-max) temp-file nil 'no-message)
-    temp-file))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Flake8
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (defun pim--find-flake8 ()
-;;   "Find flake8 executable."
-;;   (or pim-flake8-path
-;;       (executable-find "flake8")
-;;       (user-error "Cannot find flake8. Please install it or set pim-flake8-path")))
+(defun pim--find-flake8 ()
+  "Find flake8 executable."
+  (or pim-flake8-path
+      (executable-find "flake8")
+      (user-error "Cannot find flake8. Please install it or set pim-flake8-path")))
 
-;; (defun pim--get-flake8-output (temp-file &optional args)
-;;   "Run flake8 on TEMP-FILE with optional ARGS and return output."
-;;   (let ((flake8-path (pim--find-flake8)))
-;;     (with-temp-buffer
-;;       (apply #'call-process flake8-path nil t nil
-;;              (append (or args pim-flake8-args) (list temp-file)))
-;;       (buffer-string))))
+(defun pim--copy-contents-as-temp-file ()
+  "Copy current buffer to temp file and return the filename."
+  (let ((temp-file (make-temp-file "pim-")))
+    (write-region (point-min) (point-max) temp-file)
+    temp-file))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Ruff
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun pim--find-ruff ()
-  "Find ruff executable."
-  (or pim-ruff-path
-      (executable-find "ruff")
-      (user-error "Cannot find ruff. Please install it or set pim-ruff-path")))
-
-(defun pim--get-ruff-output (temp-file &optional args)
-  "Run ruff on TEMP-FILE with optional ARGS and return output."
-  (let ((ruff-path (pim--find-ruff)))
+(defun pim--get-flake8-output (temp-file &optional args)
+  "Run flake8 on TEMP-FILE with optional ARGS and return output."
+  (let ((flake8-path (pim--find-flake8)))
     (with-temp-buffer
-      (apply #'call-process ruff-path nil t nil
-             (append (or args pim-ruff-args) (list temp-file)))
+      (apply #'call-process flake8-path nil t nil
+             (append (or args pim-flake8-args) (list temp-file)))
       (buffer-string))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Deletion
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (defun pim--find-unused-modules ()
-;;   "Find unused modules from flake8 output."
-;;   (let* ((temp-file (pim--copy-contents-as-temp-file))
-;;          ;; (output (pim--get-flake8-output temp-file '("--select=F401")))
-;;          (output (pim--get-ruff-output temp-file '("--select=F401")))         
-;;          modules)
-;;     (with-temp-buffer
-;;       (insert output)
-;;       (goto-char (point-min))
-;;       (while (re-search-forward "F401 '\\([^']+\\)' imported but unused" nil t)
-;;         (let ((module (match-string 1)))
-;;           (push (if (string-match "\\([^.]+\\)$" module)
-;;                     (match-string 1 module)
-;;                   module)
-;;                 modules))))
-;;     (delete-file temp-file)
-;;     modules))
-
-
-
 (defun pim--find-unused-modules ()
-  "Find unused modules from ruff output."
-  (let* ((ruff-path (pim--find-ruff))
-         (buffer-content (buffer-substring-no-properties (point-min) (point-max)))
-         (cmd (format "%s check - --select=F401 2>&1" ruff-path)))
+  "Find unused modules from flake8 output."
+  (let* ((temp-file (pim--copy-contents-as-temp-file))
+         (output (pim--get-flake8-output temp-file '("--select=F401")))
+         modules)
     (with-temp-buffer
-      (insert buffer-content)
-      (let* ((output (shell-command-on-region (point-min) (point-max) cmd nil t))
-             modules)
-        (goto-char (point-min))
-        (while (re-search-forward "F401.*?[`']\\([^`']+\\)[`']" nil t)
-          (push (match-string 1) modules))
-        (message "%s" modules)
-        modules))))
+      (insert output)
+      (goto-char (point-min))
+      (while (re-search-forward "F401 '\\([^']+\\)' imported but unused" nil t)
+        (let ((module (match-string 1)))
+          (push (if (string-match "\\([^.]+\\)$" module)
+                    (match-string 1 module)
+                  module)
+                modules))))
+    (delete-file temp-file)
+    modules))
 
 (defun pim--remove-module (module)
   "Remove specific MODULE from import lines."
@@ -440,29 +385,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Insertion
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (defun pim--find-undefined ()
-;;   "Find undefined names from flake8 output."
-;;   (when (= (point-min) (point-max))
-;;     (user-error "Buffer is empty"))
-;;   (let* ((temp-file (pim--copy-contents-as-temp-file))
-;;          (undefined-list '())
-;;          ;; (output (pim--get-flake8-output temp-file '("--select=F821"))))
-;;          (output (pim--get-ruff-output temp-file '("--select=F821"))))    
-;;     (with-temp-buffer
-;;       (insert output)
-;;       (goto-char (point-min))
-;;       (while (re-search-forward "F821 undefined name '\\([^']+\\)'" nil t)
-;;         (push (match-string 1) undefined-list)))
-;;     (delete-file temp-file)
-;;     undefined-list))
-
 (defun pim--find-undefined ()
-  "Find undefined names from ruff output."
+  "Find undefined names from flake8 output."
   (when (= (point-min) (point-max))
     (user-error "Buffer is empty"))
   (let* ((temp-file (pim--copy-contents-as-temp-file))
          (undefined-list '())
-         (output (pim--get-ruff-output temp-file '("check" "--select=F821"))))
+         (output (pim--get-flake8-output temp-file '("--select=F821"))))
     (with-temp-buffer
       (insert output)
       (goto-char (point-min))
