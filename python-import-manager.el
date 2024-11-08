@@ -1,6 +1,10 @@
 ;;; -*- lexical-binding: t -*-
 ;;; Author: ywatanabe
+<<<<<<< HEAD
 ;;; Time-stamp: <2024-11-09 03:15:45 (ywatanabe)>
+=======
+;;; Time-stamp: <2024-11-04 02:53:40 (ywatanabe)>
+>>>>>>> f190f123ed12f2d090c30eb4e6d86313c036f139
 ;;; File: ./python-import-manager/python-import-manager.el
 
 
@@ -76,6 +80,7 @@
   (executable-find "isort")
   "Path to isort executable."
   :type 'string
+<<<<<<< HEAD
   :group 'python-import-manager)
 
 (defcustom pim-isort-args
@@ -86,6 +91,214 @@
 
 (add-to-list 'load-path (concat pim--script-dir "predefined-packages"))
 (require 'pim-imports-loader)
+=======
+  :group 'python-import-manager)
+
+(defcustom pim-isort-args
+  '("--profile" "black" "--line-length" "100")
+  "Arguments to pass to isort."
+  :type '(repeat string)
+  :group 'python-import-manager)
+
+(defcustom pim-import-list
+  '(
+    ("inspect" . "import inspect")
+    ("re" . "import re")
+    ("os" . "import os")
+    ("glob" . "from glob import glob")
+    ("json" . "import json")
+    ("time" . "import time")
+    ("datetime" . "from datetime import datetime")
+    ("itertools" . "import itertools")
+    ("combinations" . "from itertools import combinations")
+    ("cycle" . "from itertools import cycle")
+    ("product" . "from itertools import product")
+    ("functools" . "import functools")
+    ("partial" . "from functools import partial")
+    ("wraps" . "from functools import wraps")    
+    ("math" . "import math")
+    ("sys" . "import sys")
+    ("random" . "import random")
+    ("Path" . "from pathlib import Path")
+    ("csv" . "import csv")
+    ("pickle" . "import pickle")
+    ("asyncio" . "import asyncio")
+    ("Decimal" . "from decimal import Decimal")
+    ("subprocess" . "import subprocess")
+    ("importlib" . "import importlib")
+    ("ic" . "from icecream import ic")
+    ("pprint" . "from pprint import pprint")
+    ("logging" . "import logging")
+    ("warnings" . "import warnings")
+    ("tqdm" . "from tqdm import tqdm")
+    ("Tuple" . "from typing import Tuple")
+    ("Dict" . "from typing import Dict")
+    ("Any" . "from typing import Any")
+    ("_Any" . "from typing import Any as _Any")    
+    ("Union" . "from typing import Union")
+    ("Sequence" . "from typing import Sequence")
+    ("Literal" . "from typing import Literal")
+    ("Optional" . "from typing import Optional")
+    ("Iterable" . "from typing import Iterable")
+    ("Callable" . "from typing import Callable")    
+
+    ;; Debugging
+    ("ipdb" . "import ipdb")
+    ("get_ipython" . "from IPython import get_ipython")
+
+    ;; Collections
+    ("defaultdict" . "from collections import defaultdict")
+    ("Counter" . "from collections import Counter")
+    ("deque" . "from collections import deque")
+    ("namedtuple" . "from collections import namedtuple")
+    ("OrderedDict" . "from collections import OrderedDict")
+
+    ;; Data Science Core
+    ("np" . "import numpy as np")
+    ("pd" . "import pandas as pd")
+    ("xr" . "import xarray as xr")
+    ("xarray" . "import xarray")    
+    ("scipy" . "import scipy")
+    ("stats" . "from scipy import stats")
+    ("dask" . "import dask.dataframe as dd")
+    ("vaex" . "import vaex")
+    ("polars" . "import polars as pl")
+    ("cudf" . "import cudf")
+    ("pa" . "import pyarrow as pa")
+
+    ;; Visualization
+    ("plt" . "import matplotlib.pyplot as plt")
+    ("sns" . "import seaborn as sns")
+    ("px" . "import plotly.express as px")
+    ("bokeh" . "from bokeh.plotting import figure")
+    ("hv" . "import holoviews as hv")
+    ("pn" . "import panel as pn")
+    ("Axes3D" . "from mpl_toolkits.mplot3d import Axes3D")
+
+    ;; Machine Learning
+    ("sklearn" . "import sklearn")
+    ("train_test_split" . "from sklearn.model_selection import train_test_split")
+    ("linear_model" . "from sklearn import linear_model")
+    ("svm" . "from sklearn import svm")
+    ("tree" . "from sklearn import tree")
+    ("ensemble" . "from sklearn import ensemble")
+    ("metrics" . "from sklearn import metrics")
+    ("linearRegression" . "from sklearn.linear_model import LinearRegression")
+    ("KMeans" . "from sklearn.cluster import KMeans")
+    ("GridSearchCV" . "from sklearn.model_selection import GridSearchCV")
+    ("PCA" . "from sklearn.decomposition import PCA")
+    ("KNeighborsClassifier" . "from sklearn.neighbors import KNeighborsClassifier")
+    ("DummyClassifier" . "from sklearn.dummy import DummyClassifier")
+    ("SimpleImputer" . "from sklearn.impute import SimpleImputer")
+    ("MinMaxScaler" . "from sklearn.preprocessing import MinMaxScaler")
+    ("StandardScaler" . "from sklearn.preprocessing import StandardScaler")
+    ("logistic_regression" . "from sklearn.linear_model import LogisticRegression")
+    ("xgboost" . "import xgboost as xgb")
+    ("lightgbm" . "import lightgbm as lgb")
+    ("catboost" . "from catboost import CatBoostRegressor")
+
+    ;; Deep Learning
+    ("tf" . "import tensorflow as tf")
+    ("torch" . "import torch")
+    ("nn" . "import torch.nn as nn")
+    ("F" . "import torch.nn.functional as F")
+    ("keras" . "from keras.models import Sequential")
+    ("keras_layers" . "from keras.layers import Dense")
+    ("tensorflow_probability" . "import tensorflow_probability as tfp")
+    ("PyTorchGeometric" . "from torch_geometric.data import Data")
+    ("torchvision" . "import torchvision")
+    ("fastai" . "from fastai.vision.all import *")
+    ("pytorch_lightning" . "from pytorch_lightning import Trainer")
+
+    ;; NLP
+    ("transformers" . "from transformers import pipeline")
+    ("nltk" . "import nltk")
+    ("spacy" . "import spacy")
+    ("fairseq" . "from fairseq.models import BlenderbotModel")
+
+    ;; Statistics
+    ("statsmodels" . "import statsmodels")
+    ("sm" . "import statsmodels.api as sm")
+    ("stats" . "from scipy import stats")
+    ("pg" . "import pingouin as pg")
+
+
+    ;; Signal Processing
+    ("signal" . "from scipy import signal")
+    ("pydsp" . "import pydsp as dsp")
+    ("sf" . "import soundfile as sf")
+    ("find_peaks" . "from scipy.signal import find_peaks")
+    ("mne" . "import mne")
+
+    ;; Image & Video Processing
+    ("PIL" . "from PIL import Image")
+    ("skimage" . "import skimage")
+    ("cv2" . "import cv2")
+
+    ;; Audio Processing
+    ("AudioSegment" . "from pydub import AudioSegment")
+    ("librosa" . "import librosa")
+    ("sr" . "import speech_recognition as sr")
+
+    ;; Web Development & APIs
+    ("Flask" . "from flask import Flask")
+    ("requests" . "import requests")
+    ("websocket" . "import websocket")
+    ("uvicorn" . "import uvicorn")
+
+    ;; Database
+    ("sqlite3" . "import sqlite3")
+    ("sqlalchemy" . "from sqlalchemy import create_engine")
+    ("pymongo" . "from pymongo import MongoClient")
+
+    ;; GUI
+    ("tkinter" . "import tkinter")
+    ("tk" . "import tkinter as tk")
+
+    ;; Testing
+    ("pytest" . "import pytest")
+    ("hypothesis" . "from hypothesis import given")
+
+    ;; ML Ops & Experiment Management
+    ("mlflow" . "import mlflow")
+    ("wandb" . "import wandb")
+    ("tensorboard" . "import tensorboard")
+    ("optuna" . "import optuna")
+    ("hydra" . "import hydra")
+    ("airflow" . "from airflow import DAG")
+    ("prefect" . "from prefect import flow")
+    ("dagster" . "from dagster import job")
+    ("kedro" . "import kedro")
+    ("dvc" . "import dvc.api")
+
+    ;; High Performance Computing
+    ("numba" . "from numba import jit")
+    ("cupy" . "import cupy as cp")
+    ("jax" . "import jax.numpy as jnp")
+    ("pyspark" . "from pyspark.sql import SparkSession")
+    ("ray" . "import ray")
+
+    ;; Web Scraping
+    ("BeautifulSoup" . "from bs4 import BeautifulSoup")
+    ("xml" . "import xml.etree.ElementTree as ET")
+
+    ;; Custom Libraries
+    ("mngs" . "import mngs")
+    ("printc" . "import mngs.str import printc")    
+    ;; ("load" . "from mngs.io import load")
+    ;; ("save" . "from mngs.io import save")    
+    ("torch_fn" . "from mngs.decorators import torch_fn")
+    ("numpy_fn" . "from mngs.decorators import numpy_fn")
+    ("pandas_fn" . "from mngs.decorators import pandas_fn")
+    ("deprecated" . "from mngs.decorators import deprecated")
+    ("split" . "from mngs.path import split")
+    ("utils" . "from scripts import utils")
+    ("ArrayLike" . "from mngs.typing import ArrayLike"))
+  "A list of package names to automatically insert when missed."
+  :type '(alist :key-type string :value-type string)
+  :group 'python-import-manager)
+
+>>>>>>> f190f123ed12f2d090c30eb4e6d86313c036f139
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Flake8
@@ -223,7 +436,11 @@
 
 ;; "header " means consective commenting lines, like ^# ...\n^#...\n\n
 
+<<<<<<< HEAD
 ;; Note that insertion itself will update the position; so, main-guard position should be considered after insertion of missed packages
+=======
+;; Note that insertion itself will update the position; so, main-guard position should be considered after insertion of missed packages 
+>>>>>>> f190f123ed12f2d090c30eb4e6d86313c036f139
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; ;; no indent for main-gudard
@@ -233,6 +450,7 @@
 ;;   (save-excursion
 ;;     (let* ((main-guard-pos (save-excursion
 ;;                             (re-search-forward "^if __name__ == \"__main__\":" nil t)))
+<<<<<<< HEAD
 ;;            (adjusted-main-guard-pos (when main-guard-pos
 ;;                                     (+ main-guard-pos current-offset)))
 ;;            (name-pos (save-excursion
@@ -242,6 +460,17 @@
 ;;            (header-end (pim--find-header-end)))
 ;;       (if (and adjusted-main-guard-pos
 ;;                adjusted-name-pos
+=======
+;;            (adjusted-main-guard-pos (when main-guard-pos 
+;;                                     (+ main-guard-pos current-offset)))
+;;            (name-pos (save-excursion
+;;                       (re-search-forward (regexp-quote name) nil t)))
+;;            (adjusted-name-pos (when name-pos 
+;;                               (+ name-pos current-offset)))
+;;            (header-end (pim--find-header-end)))
+;;       (if (and adjusted-main-guard-pos 
+;;                adjusted-name-pos 
+>>>>>>> f190f123ed12f2d090c30eb4e6d86313c036f139
 ;;                (> adjusted-name-pos adjusted-main-guard-pos))
 ;;           (progn
 ;;             (goto-char adjusted-main-guard-pos)
@@ -277,16 +506,26 @@
 ;;                (pos (pim--find-import-position name current-offset)))
 ;;           (when (and import-line pos)
 ;;             (push import-line (gethash pos import-positions))
+<<<<<<< HEAD
 ;;             (setq current-offset (+ current-offset
 ;;                                   (1+ (length import-line)))))))
 
+=======
+;;             (setq current-offset (+ current-offset 
+;;                                   (1+ (length import-line)))))))
+      
+>>>>>>> f190f123ed12f2d090c30eb4e6d86313c036f139
 ;;       (save-excursion
 ;;         (maphash (lambda (pos lines)
 ;;                   (goto-char pos)
 ;;                   (dolist (line (reverse lines))
 ;;                     (insert line "\n")))
 ;;                 import-positions)
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> f190f123ed12f2d090c30eb4e6d86313c036f139
 ;;         (goto-char (point-min))
 ;;         (while (re-search-forward "\n\n\n+" nil t)
 ;;           (replace-match "\n\n"))))))
@@ -295,6 +534,122 @@
 ;; Implement pim--find-header-end
 
 
+<<<<<<< HEAD
+=======
+;;;###autoload
+(defun pim--find-header-end ()
+  "Find the end position of the header comment section in a Python file.
+Header is defined as consecutive comment lines starting from the beginning."
+  (save-excursion
+    (goto-char (point-min))
+    (let ((end-pos (point-min)))
+      (while (and (not (eobp))
+                  (looking-at "^#"))
+        (setq end-pos (line-end-position))
+        (forward-line 1))
+      ;; Skip empty lines after comments
+      (while (and (not (eobp))
+                  (looking-at "^$"))
+        (setq end-pos (line-end-position))
+        (forward-line 1))
+      (1+ end-pos))))
+
+;;;###autoload
+(defun pim--find-import-position (name current-offset)
+  "Find proper position to insert import for NAME, considering CURRENT-OFFSET."
+  (save-excursion
+    (let* ((main-guard-pos (save-excursion
+                            (re-search-forward "^if __name__ == \"__main__\":" nil t)))
+           (adjusted-main-guard-pos (when main-guard-pos 
+                                    (+ main-guard-pos current-offset)))
+           (name-pos (save-excursion
+                      (re-search-forward (regexp-quote name) nil t)))
+           (adjusted-name-pos (when name-pos 
+                              (+ name-pos current-offset)))
+           (header-end (pim--find-header-end))
+           (base-indent (when main-guard-pos
+                         (save-excursion
+                           (goto-char (line-beginning-position))
+                           (forward-line 1)
+                           (current-indentation)))))
+      (if (and adjusted-main-guard-pos 
+               adjusted-name-pos 
+               (> adjusted-name-pos adjusted-main-guard-pos))
+          (progn
+            (goto-char adjusted-main-guard-pos)
+            (forward-line 1)
+            (+ (point) current-offset))
+        (goto-char (point-min))
+        (+ (cond
+            ((and main-guard-pos
+                  (re-search-forward "^import\\|^from" main-guard-pos t))
+             (line-beginning-position))
+            ((> header-end (point-min))
+             header-end)
+            (t (point-min)))
+           current-offset)))))
+
+;;;###autoload
+(defun pim-insert-missed ()
+  "Insert missing imports from predefined list based on undefined names."
+  (interactive)
+  (let ((undefined-names (pim--find-undefined))
+        (import-positions (make-hash-table :test 'equal))
+        (current-offset 0))
+    (when undefined-names
+      (dolist (name undefined-names)
+        (let* ((import-line (cdr (assoc name pim-import-list)))
+               (pos (pim--find-import-position name current-offset))
+               (main-guard-pos (save-excursion
+                               (goto-char pos)
+                               (re-search-backward "^if __name__ == \"__main__\":" nil t))))
+          (when (and import-line pos)
+            (let ((indented-line 
+                   (if (and main-guard-pos (> pos main-guard-pos))
+                       (concat "    " import-line)
+                     import-line)))
+              (push indented-line (gethash pos import-positions))
+              (setq current-offset (+ current-offset 
+                                    (1+ (length indented-line))))))))
+      
+      (save-excursion
+        (maphash (lambda (pos lines)
+                  (goto-char pos)
+                  (dolist (line (reverse lines))
+                    (insert line "\n")))
+                import-positions)
+        
+        (goto-char (point-min))
+        (while (re-search-forward "\n\n\n+" nil t)
+          (replace-match "\n\n"))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ;; isort
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; (defun pim--find-isort ()
+;;   "Find isort executable."
+;;   (or pim-isort-path
+;;       (executable-find "isort")
+;;       (user-error "Cannot find isort. Please install it or set pim-isort-path")))
+
+;; (defun pim--get-isort-output (temp-file &optional args)
+;;   "Run isort on TEMP-FILE with optional ARGS and return output."
+;;   (let ((isort-path (pim--find-isort)))
+;;     (with-temp-buffer
+;;       (apply #'call-process isort-path nil t nil
+;;              (append (or args pim-isort-args) (list temp-file)))
+;;       (buffer-string))))
+
+;; (defun pim-isort ()
+;;   "Sort imports using isort."
+;;   (interactive)
+;;   (let* ((temp-file (pim--copy-contents-as-temp-file)))
+;;     (pim--get-isort-output temp-file)
+;;     (erase-buffer)
+;;     (insert-file-contents temp-file)
+;;     (delete-file temp-file)))
+
+>>>>>>> f190f123ed12f2d090c30eb4e6d86313c036f139
 ;;;###autoload
 (defun pim--find-header-end ()
   "Find the end position of the header comment section in a Python file.
@@ -436,7 +791,10 @@ Header is defined as consecutive comment lines starting from the beginning."
   "Fix imports in current buffer."
   (interactive)
   (let ((original-point (point)))
+<<<<<<< HEAD
     (pim-consolidate-imports)
+=======
+>>>>>>> f190f123ed12f2d090c30eb4e6d86313c036f139
     (pim-delete-unused)
     (pim-insert-missed)
     (pim-delete-duplicated)
