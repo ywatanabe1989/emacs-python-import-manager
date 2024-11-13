@@ -1,6 +1,6 @@
 ;;; -*- lexical-binding: t -*-
 ;;; Author: ywatanabe
-;;; Time-stamp: <2024-11-09 14:01:35 (ywatanabe)>
+;;; Time-stamp: <2024-11-12 14:15:12 (ywatanabe)>
 ;;; File: ./python-import-manager/python-import-manager.el
 
 
@@ -36,18 +36,45 @@
 (require 'seq)
 (require 'python)
 (require 'python-isort)
+(require 'blacken)
+
+(defcustom pim-auto-mode nil
+  "When non-nil, automatically run PIM on save in Python buffers."
+  :type 'boolean
+  :group 'python-import-manager)
+
+(defun pim-enable-auto-mode ()
+  "Enable automatic PIM on save for Python buffers."
+  (when (eq major-mode 'python-mode)
+    (add-hook 'before-save-hook #'pim-fix-imports nil t)))  ; Changed from #'pim to #'pim-fix-imports
+
+(defun pim-disable-auto-mode ()
+  "Disable automatic PIM on save for Python buffers."
+  (remove-hook 'before-save-hook #'pim t))
+
+(define-minor-mode pim-auto-mode
+  "Toggle automatic PIM on save."
+  :global t
+  :group 'python-import-manager
+  (if pim-auto-mode
+      (progn
+        (add-hook 'python-mode-hook #'pim-enable-auto-mode)
+        ;; Apply to existing Python buffers
+        (dolist (buf (buffer-list))
+          (with-current-buffer buf
+            (when (eq major-mode 'python-mode)
+              (pim-enable-auto-mode)))))
+    (progn
+      (remove-hook 'python-mode-hook #'pim-enable-auto-mode)
+      (dolist (buf (buffer-list))
+        (with-current-buffer buf
+          (when (eq major-mode 'python-mode)
+            (pim-disable-auto-mode)))))))
 
 (defgroup python-import-manager nil
   "Management of Python imports."
   :group 'tools
   :prefix "pim-")
-
-(define-minor-mode pim-auto-mode
-  "Minor mode to automatically fix imports on save."
-  :lighter " PIM"
-  (if pim-auto-mode
-      (add-hook 'before-save-hook #'pim-fix-imports nil t)
-    (remove-hook 'before-save-hook #'pim-fix-imports t)))
 
 (defvar pim--script-dir
   (file-name-directory (or load-file-name buffer-file-name))
@@ -73,7 +100,8 @@
   :group 'python-import-manager)
 
 (defcustom pim-isort-path
-  (executable-find "isort")
+  (or (bound-and-true-p python-isort-command)
+      (executable-find "isort"))
   "Path to isort executable."
   :type 'string
   :group 'python-import-manager)
@@ -84,8 +112,38 @@
   :type '(repeat string)
   :group 'python-import-manager)
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; pim-import-list
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat pim--script-dir "predefined-packages"))
-(require 'pim-imports-loader)
+
+(require 'pim-imports-custom)
+(require 'pim-imports-data-science)
+(require 'pim-imports-signal-media)
+(require 'pim-imports-standard)
+(require 'pim-imports-web)
+
+;; Merge all imports into one list
+(defvar pim-import-list nil "All predefined Python imports combined.")
+(setq pim-import-list
+      (append pim-imports-custom
+              pim-imports-data-science
+              pim-imports-signal-media
+              pim-imports-standard
+              pim-imports-web))
+
+
+(defun pim--update-import-list ()
+  "Update the combined import list from all predefined package lists."
+  (setq pim-import-list
+        (delete-dups
+         (append pim-imports-custom
+                 pim-imports-data-science
+                 pim-imports-signal-media
+                 pim-imports-standard
+                 pim-imports-web))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Flake8
@@ -189,22 +247,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Insertion
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ;; working except for type hint
-;; (defun pim--find-undefined ()
-;;   "Find undefined names from flake8 output."
-;;   (when (= (point-min) (point-max))
-;;     (user-error "Buffer is empty"))
-;;   (let* ((temp-file (pim--copy-contents-as-temp-file))
-;;          (undefined-list '())
-;;          (output (pim--get-flake8-output temp-file '("--select=F821"))))
-;;     (with-temp-buffer
-;;       (insert output)
-;;       (goto-char (point-min))
-;;       (while (re-search-forward "F821 undefined name '\\([^']+\\)'" nil t)
-;;         (push (match-string 1) undefined-list)))
-;;     (delete-file temp-file)
-;;     undefined-list))
-
 (defun pim--find-undefined ()
   "Find undefined names from flake8 output."
   (interactive)
@@ -217,18 +259,42 @@
       (insert output)
       (goto-char (point-min))
       (while (re-search-forward "F821 undefined name '\\([^']+\\)'" nil t)
-        (let* ((name (match-string 1))
-               (types (progn
-                       (with-temp-buffer
-                         (insert name)
-                         (goto-char (point-min))
-                         (let ((matches '()))
-                           (while (re-search-forward "\\([A-Z][A-Za-z0-9_]*\\)[[(]?" nil t)
-                             (push (match-string 1) matches))
-                           matches)))))
-          (setq undefined-list (append types undefined-list)))))
+        (let ((name (match-string 1)))
+          (when (assoc name pim-import-list)
+            (push name undefined-list)))))
     (delete-file temp-file)
     (delete-dups undefined-list)))
+
+
+;; (defun pim--find-undefined ()
+;;   "Find undefined names from flake8 output."
+;;   (interactive)
+;;   (message "Starting pim--find-undefined...")
+;;   (when (= (point-min) (point-max))
+;;     (user-error "Buffer is empty"))
+;;   (let* ((temp-file (pim--copy-contents-as-temp-file))
+;;          (undefined-list '())
+;;          (output (pim--get-flake8-output temp-file '("--select=F821"))))
+;;     (message "Flake8 output: %s" output)
+;;     (save-excursion
+;;       (goto-char (point-min))
+;;       (while (re-search-forward "\\b\\([a-zA-Z_][a-zA-Z0-9_]*\\)(" nil t)
+;;         (let ((name (match-string 1)))
+;;           (when (assoc name pim-import-list)
+;;             (message "Found function call: %s" name)
+;;             (push name undefined-list)))))
+;;     (with-temp-buffer
+;;       (insert output)
+;;       (goto-char (point-min))
+;;       (while (re-search-forward "F821 undefined name '\\([^']+\\)'" nil t)
+;;         (let ((name (match-string 1)))
+;;           (when (assoc name pim-import-list)
+;;             (message "Found undefined name: %s" name)
+;;             (push name undefined-list)))))
+;;     (delete-file temp-file)
+;;     (let ((result (delete-dups undefined-list)))
+;;       (message "Final undefined list: %s" result)
+;;       result)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -338,9 +404,45 @@ Header is defined as consecutive comment lines starting from the beginning."
         (forward-line 1))
       (1+ end-pos))))
 
-;;;###autoload
+;; ;; ;; working
+;; ;;;###autoload
+;; (defun pim--find-import-position (name current-offset)
+;;   "Find proper position to insert import for NAME, considering CURRENT-OFFSET."
+;;   (save-excursion
+;;     (let* ((main-guard-pos (save-excursion
+;;                             (re-search-forward "^if __name__ == \"__main__\":" nil t)))
+;;            (adjusted-main-guard-pos (when main-guard-pos
+;;                                     (+ main-guard-pos current-offset)))
+;;            (name-pos (save-excursion
+;;                       (re-search-forward (regexp-quote name) nil t)))
+;;            (adjusted-name-pos (when name-pos
+;;                               (+ name-pos current-offset)))
+;;            (header-end (pim--find-header-end))
+;;            (base-indent (when main-guard-pos
+;;                          (save-excursion
+;;                            (goto-char (line-beginning-position))
+;;                            (forward-line 1)
+;;                            (current-indentation)))))
+;;       (if (and adjusted-main-guard-pos
+;;                adjusted-name-pos
+;;                (> adjusted-name-pos adjusted-main-guard-pos))
+;;           (progn
+;;             (goto-char adjusted-main-guard-pos)
+;;             (forward-line 1)
+;;             (+ (point) current-offset))
+;;         (goto-char (point-min))
+;;         (+ (cond
+;;             ((and main-guard-pos
+;;                   (re-search-forward "^import\\|^from" main-guard-pos t))
+;;              (line-beginning-position))
+;;             ((> header-end (point-min))
+;;              header-end)
+;;             (t (point-min)))
+;;            current-offset)))))
+
 (defun pim--find-import-position (name current-offset)
   "Find proper position to insert import for NAME, considering CURRENT-OFFSET."
+  (message "Finding import position for %s (offset: %d)" name current-offset)
   (save-excursion
     (let* ((main-guard-pos (save-excursion
                             (re-search-forward "^if __name__ == \"__main__\":" nil t)))
@@ -356,22 +458,63 @@ Header is defined as consecutive comment lines starting from the beginning."
                            (goto-char (line-beginning-position))
                            (forward-line 1)
                            (current-indentation)))))
-      (if (and adjusted-main-guard-pos
-               adjusted-name-pos
-               (> adjusted-name-pos adjusted-main-guard-pos))
-          (progn
-            (goto-char adjusted-main-guard-pos)
-            (forward-line 1)
-            (+ (point) current-offset))
-        (goto-char (point-min))
-        (+ (cond
-            ((and main-guard-pos
-                  (re-search-forward "^import\\|^from" main-guard-pos t))
-             (line-beginning-position))
-            ((> header-end (point-min))
-             header-end)
-            (t (point-min)))
-           current-offset)))))
+      (message "Main guard: %s, Name pos: %s, Header end: %s"
+               main-guard-pos name-pos header-end)
+      (let ((final-pos
+             (if (and adjusted-main-guard-pos
+                      adjusted-name-pos
+                      (> adjusted-name-pos adjusted-main-guard-pos))
+                 (progn
+                   (goto-char adjusted-main-guard-pos)
+                   (forward-line 1)
+                   (+ (point) current-offset))
+               (goto-char (point-min))
+               (+ (cond
+                   ((and main-guard-pos
+                         (re-search-forward "^import\\|^from" main-guard-pos t))
+                    (line-beginning-position))
+                   ((> header-end (point-min))
+                    header-end)
+                   (t (point-min)))
+                  current-offset))))
+        (message "Selected position: %d" final-pos)
+        final-pos))))
+
+;; (defun pim-insert-missed ()
+;;   "Insert missing imports from predefined list based on undefined names."
+;;   (interactive)
+;;   (message "Starting pim-insert-missed...")
+;;   (let ((undefined-names (pim--find-undefined))
+;;         (import-positions (make-hash-table :test 'equal))
+;;         (current-offset 0))
+;;     (message "Found undefined names: %s" undefined-names)
+;;     (when undefined-names
+;;       (dolist (name undefined-names)
+;;         (let* ((import-line (cdr (assoc name pim-import-list)))
+;;                (pos (pim--find-import-position name current-offset))
+;;                (main-guard-pos (save-excursion
+;;                                (goto-char pos)
+;;                                (re-search-backward "^if __name__ == \"__main__\":" nil t))))
+;;           (message "Processing %s: line '%s' at pos %d" name import-line pos)
+;;           (when (and import-line pos)
+;;             (let ((indented-line
+;;                    (if (and main-guard-pos (> pos main-guard-pos))
+;;                        (concat "    " import-line)
+;;                      import-line)))
+;;               (push indented-line (gethash pos import-positions))
+;;               (setq current-offset (+ current-offset
+;;                                     (1+ (length indented-line))))))))
+;;       (message "Final import positions: %s" import-positions)
+;;       (save-excursion
+;;         (maphash (lambda (pos lines)
+;;                   (goto-char pos)
+;;                   (dolist (line (reverse lines))
+;;                     (message "Inserting at %d: %s" pos line)
+;;                     (insert line "\n")))
+;;                 import-positions)
+;;         (goto-char (point-min))
+;;         (while (re-search-forward "\n\n\n+" nil t)
+;;           (replace-match "\n\n"))))))
 
 ;;;###autoload
 (defun pim-insert-missed ()
@@ -408,23 +551,233 @@ Header is defined as consecutive comment lines starting from the beginning."
           (replace-match "\n\n"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Split for solid processing
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defun pim--split-imports ()
+;;   "Split 'from x import (A, B)' statements into separate lines.
+;; Returns list of split import statements."
+;;   (save-excursion
+;;     (let (imports-list)
+;;       (goto-char (point-min))
+;;       (while (re-search-forward "^from \\([^ ]+\\) import (\\([^)]+\\))" nil t)
+;;         (let* ((module (match-string 1))
+;;                (imports (split-string (match-string 2) "," t "[ \t\n]+"))
+;;                (split-imports (mapcar (lambda (imp)
+;;                                       (format "from %s import %s" module imp))
+;;                                     imports)))
+;;           (kill-whole-line)
+;;           (setq imports-list (append imports-list split-imports))))
+;;       (when imports-list
+;;         (goto-char (point-min))
+;;         (insert (string-join (delete-dups imports-list) "\n") "\n")))))
+
+;; ;; ;; not working sometims
+;; (defun pim--split-imports ()
+;;   "Split multi-line import statements properly."
+;;   (interactive)
+;;   (let ((original-point (point)))
+;;     (save-excursion
+;;       (goto-char (point-min))
+;;       (message "Searching for imports...")
+;;       (while (re-search-forward "^from \\([^ ]+\\) import *(\n?\\([^)]+\\))" nil t)
+;;         (let* ((module (match-string 1))
+;;                (imports-text (match-string 2))
+;;                (imports (split-string imports-text "[,\n[:space:]]+" t))
+;;                (start (match-beginning 0))
+;;                (end (match-end 0))
+;;                (original-lines (count-lines start end)))
+;;           (message "Found module: %s" module)
+;;           (message "Imports text: %s" imports-text)
+;;           (message "Split imports: %s" imports)
+;;           (message "Region: %d to %d" start end)
+;;           (message "Original lines: %d" original-lines)
+;;           ;; Store the split lines
+;;           (let ((new-imports
+;;                  (mapconcat
+;;                   (lambda (imp)
+;;                     (format "from %s import %s" module imp))
+;;                   (sort imports #'string<)
+;;                   "\n")))
+;;             (message "New imports:\n%s" new-imports)
+;;             ;; Remove original
+;;             (delete-region start end)
+;;             ;; Insert new format
+;;             (goto-char start)
+;;             (insert new-imports))))
+;;       (goto-char original-point))))
+
+
+
+
+;; (defun pim--split-imports ()
+;;   "Split multi-line import statements into individual lines."
+;;   (interactive)
+;;   (let ((original-content (buffer-string))
+;;         (temp-buffer (generate-new-buffer "*pim-temp*")))
+;;     (with-current-buffer temp-buffer
+;;       (insert original-content)
+;;       (goto-char (point-min))
+;;       (while (re-search-forward "^\\(from \\([^ ]+\\) import *(\n?\\([^)]+\\))\n?\\)" nil t)
+;;         (let* ((module (match-string 2))
+;;                (imports-text (match-string 3))
+;;                (imports (split-string imports-text "[,\n[:space:]]+" t))
+;;                (start (match-beginning 0))
+;;                (end (match-end 0)))
+;;           (delete-region start end)
+;;           (goto-char start)
+;;           (dolist (imp imports)
+;;             (insert (format "from %s import %s\n"
+;;                           module (string-trim imp))))))
+;;       (let ((new-content (buffer-string)))
+;;         (with-current-buffer (current-buffer)
+;;           (erase-buffer)
+;;           (insert new-content))))
+;;     (kill-buffer temp-buffer)))
+;; ;; Let's break down into pieces
+
+;; 1. pim--find-multiple-imports-one-line (note the comma)
+;; 2. pim--find-multiple-imports-multiple-line (using parentheses and commas)
+;; 3. pim--find-multiple-imports-to-temp-buffer
+
+
+
+;; for single line: "^from .*, .*[^()]$"
+(defun pim--find-multiple-imports-one-line ()
+  "Find and split imports on a single line separated by commas."
+  (interactive)
+  (let ((temp-buffer (generate-new-buffer "*pim-single-line-imports*")))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "^from [^(\n]+ import +[^(\n,]+ *, *[^(\n]+$" nil t)
+        (let ((matched-text (buffer-substring-no-properties
+                            (line-beginning-position)
+                            (line-end-position))))
+          (with-current-buffer temp-buffer
+            (insert matched-text "\n")))))
+    ;; (display-buffer temp-buffer)
+    ))
+
+(defun pim--split-imports-one-line ()
+  "Split multiple imports into separate lines."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward "^from \\([^(\n]+\\) import +\\([^(\n,]+\\) *, *\\([^(\n]+\\)$" nil t)
+      (let* ((module (match-string 1))
+             (import1 (match-string 2))
+             (import2 (match-string 3))
+             (replacement (format "from %s import %s\nfrom %s import %s"
+                                module import1 module import2)))
+        (replace-match replacement)))))
+
+;; for multiple lines: "^from [^\n]+ import[[:space:]]*(\n?[[:space:]]*[^()]+,?\n?)*)"
+(defun pim--find-multiple-imports-to-temp-buffer ()
+  "Find multiple imports and write them to a temporary buffer."
+  (interactive)
+  (let ((temp-buffer (generate-new-buffer "*pim-multiple-imports*")))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "^from [^\n]+ import[[:space:]]*(\n?[[:space:]]*[^()]+,?\n?)*)" nil t)
+        (let* ((start (match-beginning 0))
+               (end (match-end 0))
+               (matched-text (buffer-substring-no-properties start end)))
+          (with-current-buffer temp-buffer
+            (insert matched-text "\n")))))
+    ;; (display-buffer temp-buffer)
+    ))
+
+(defun pim--extract-module-and-imports (import-statement)
+  "Extract module and imports from a multiline import statement."
+  (when (string-match "^from \\([^(\n]+\\) import *( *\n?\\([^)]+\\)" import-statement)
+    (let ((module (match-string 1 import-statement))
+          (imports (match-string 2 import-statement)))
+      (cons module
+            (split-string imports ",[\n \t]*" t "[ \t\n]+")))))
+
+(defun pim--format-imports (module-imports)
+  "Format module and imports into separate lines."
+  (let ((module (car module-imports))
+        (imports (cdr module-imports)))
+    (mapconcat
+     (lambda (imp) (format "from %s import %s" module imp))
+     imports "\n")))
+
+(defun pim--split-imports-multiline ()
+  "Split multiline imports into separate lines."
+  (interactive)
+  (let ((imports (pim--find-multiple-imports-to-temp-buffer))
+        (count 0)
+        (limit 100))
+    (save-excursion
+      (goto-char (point-min))
+      (while (and (< count limit)
+                  (re-search-forward "^from \\([^(\n]+\\) import *( *\n?\\([^)]+\\)[[:space:]]*)" nil t))
+        (message "Processing import #%d at position %d" count (point))
+        (let ((start (match-beginning 0))
+              (end (match-end 0)))
+          (when-let* ((module-imports (pim--extract-module-and-imports
+                                     (match-string 0)))
+                      (replacement (pim--format-imports module-imports)))
+            (delete-region start end)
+            (goto-char start)
+            (insert replacement)
+            (goto-char (+ start (length replacement)))))
+        (setq count (1+ count))))))
+
+(defun pim--split-imports ()
+  (interactive)
+  (pim--split-imports-one-line)
+  (pim--split-imports-multiline)
+  )
+
+;; (defun pim--find-multiple-imports-to-temp-buffer ()
+;;   "Find multiple imports and write them to a temporary buffer."
+;;   (interactive)
+;;   (let ((temp-buffer (generate-new-buffer "*pim-multiple-imports*")))
+;;     (save-excursion
+;;       (goto-char (point-min))
+;;       (while (re-search-forward "^from [^(\n]+ import (\n\\([^)]+\\)\n" nil t)
+;;         (let* ((start (match-beginning 0))
+;;                (end (save-excursion
+;;                      (goto-char (+ (match-end 0) 1))
+;;                      (re-search-forward ")" nil t)
+;;                      (point))
+;;                     )
+;;                (matched-text (buffer-substring-no-properties start end)))
+;;           (with-current-buffer temp-buffer
+;;             (insert matched-text "\n"))
+;;           (goto-char start)
+;;           (insert "# ")
+;;           (while (< (point) end)
+;;             (forward-line)
+;;             (when (< (point) end)
+;;               (insert "# ")))))
+;;         ))
+;;     (display-buffer temp-buffer)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Collection
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; (defun pim--collect-all-imports ()
+;;   "Collect all import statements from the buffer."
+;;   (let (imports)
+;;     (save-excursion
+;;       (goto-char (point-min))
+;;       (while (re-search-forward "^\\(from\\|import\\) .*$" nil t)
+;;         (push (match-string-no-properties 0) imports)
+;;         (kill-whole-line)))
+;;     (nreverse imports)))
+
 (defun pim--collect-all-imports ()
   "Collect all import statements from the buffer."
   (let (imports)
     (save-excursion
       (goto-char (point-min))
       (while (re-search-forward "^\\(from\\|import\\) .*$" nil t)
-        (push (match-string-no-properties 0) imports)
-        (kill-whole-line)))
+        (push (match-string-no-properties 0) imports)))
     (nreverse imports)))
-
-;; (defun pim--insert-imports-at-top (imports)
-;;   "Insert IMPORTS at the appropriate position near the top of the file."
-;;   (save-excursion
-;;     (goto-char (pim--find-header-end))
-;;     (insert (string-join imports "\n") "\n\n")))
 
 (defun pim--find-imports-marker ()
   "Find the position after '\"\"\"Imports\"\"\"' line."
@@ -447,25 +800,24 @@ Header is defined as consecutive comment lines starting from the beginning."
   (let ((imports (pim--collect-all-imports)))
     (pim--insert-imports-at-top imports)))
 
-;; (defun pim-consolidate-imports ()
-;;   "Move all import statements to the top of the file."
-;;   (interactive)
-;;   (let ((imports (pim--collect-all-imports)))
-;;     (pim--insert-imports-at-top imports)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; All-in-One function
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun pim-fix-imports ()
   "Fix imports in current buffer."
   (interactive)
+  (message "pim-fix-imports called")
   (let ((original-point (point)))
-    (pim-consolidate-imports)
+    (pim--update-import-list)
+    (pim--split-imports)
     (pim-delete-unused)
-    (pim-insert-missed)
     (pim-delete-duplicated)
+    (pim-insert-missed)
     (python-isort-buffer)
-    (goto-char original-point)))
+    (blacken-buffer)
+    (goto-char original-point)
+    ))
+
 
 ;;;###autoload
 (defalias 'pim 'pim-fix-imports)
