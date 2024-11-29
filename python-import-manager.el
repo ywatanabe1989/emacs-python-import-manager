@@ -1,6 +1,6 @@
 ;;; -*- lexical-binding: t -*-
 ;;; Author: ywatanabe
-;;; Time-stamp: <2024-11-12 14:15:12 (ywatanabe)>
+;;; Time-stamp: <2024-11-17 12:20:13 (ywatanabe)>
 ;;; File: ./python-import-manager/python-import-manager.el
 
 
@@ -252,19 +252,34 @@
   (interactive)
   (when (= (point-min) (point-max))
     (user-error "Buffer is empty"))
+
   (let* ((temp-file (pim--copy-contents-as-temp-file))
          (undefined-list '())
-         (output (pim--get-flake8-output temp-file '("--select=F821"))))
+         (output (progn
+                  (message "Running flake8 on temp file: %s" temp-file)
+                  (pim--get-flake8-output temp-file '("--select=F821")))))
+
+    (message "Flake8 output: %s" output)
+
     (with-temp-buffer
       (insert output)
+      (message "Buffer content after insert: %s" (buffer-string))
+
       (goto-char (point-min))
       (while (re-search-forward "F821 undefined name '\\([^']+\\)'" nil t)
         (let ((name (match-string 1)))
+          (message "Found undefined name: %s" name)
           (when (assoc name pim-import-list)
+            (message "Name %s found in pim-import-list" name)
             (push name undefined-list)))))
-    (delete-file temp-file)
-    (delete-dups undefined-list)))
 
+    (message "Temporary file deletion status: %s"
+             (condition-case err
+                 (progn (delete-file temp-file) "success")
+               (error (format "failed: %s" err))))
+
+    (message "Final undefined-list: %s" undefined-list)
+    (delete-dups undefined-list)))
 
 ;; (defun pim--find-undefined ()
 ;;   "Find undefined names from flake8 output."
@@ -516,37 +531,95 @@ Header is defined as consecutive comment lines starting from the beginning."
 ;;         (while (re-search-forward "\n\n\n+" nil t)
 ;;           (replace-match "\n\n"))))))
 
+;; ;;;###autoload
+;; (defun pim-insert-missed ()
+;;   "Insert missing imports from predefined list based on undefined names."
+;;   (interactive)
+;;   (let ((undefined-names (pim--find-undefined))
+;;         (import-positions (make-hash-table :test 'equal))
+;;         (current-offset 0))
+;;     (when undefined-names
+;;       (dolist (name undefined-names)
+;;         (let* ((import-line (cdr (assoc name pim-import-list)))
+;;                (pos (pim--find-import-position name current-offset))
+;;                (main-guard-pos (save-excursion
+;;                                (goto-char pos)
+;;                                (re-search-backward "^if __name__ == \"__main__\":" nil t))))
+;;           (when (and import-line pos)
+;;             (let ((indented-line
+;;                    (if (and main-guard-pos (> pos main-guard-pos))
+;;                        (concat "    " import-line)
+;;                      import-line)))
+;;               (push indented-line (gethash pos import-positions))
+;;               (setq current-offset (+ current-offset
+;;                                     (1+ (length indented-line))))))))
+
+;;       (save-excursion
+;;         (maphash (lambda (pos lines)
+;;                   (goto-char pos)
+;;                   (dolist (line (reverse lines))
+;;                     (insert line "\n")))
+;;                 import-positions)
+
+;;         (goto-char (point-min))
+;;         (while (re-search-forward "\n\n\n+" nil t)
+;;           (replace-match "\n\n"))))))
+
+
 ;;;###autoload
 (defun pim-insert-missed ()
   "Insert missing imports from predefined list based on undefined names."
   (interactive)
-  (let ((undefined-names (pim--find-undefined))
+  (let ((undefined-names (progn
+                          (message "Finding undefined names...")
+                          (pim--find-undefined)))
         (import-positions (make-hash-table :test 'equal))
         (current-offset 0))
+
+    (message "Undefined names found: %s" undefined-names)
+
     (when undefined-names
       (dolist (name undefined-names)
+        (message "Processing name: %s" name)
         (let* ((import-line (cdr (assoc name pim-import-list)))
-               (pos (pim--find-import-position name current-offset))
+               (pos (progn
+                     (message "Finding import position for %s with offset %d" name current-offset)
+                     (pim--find-import-position name current-offset)))
                (main-guard-pos (save-excursion
                                (goto-char pos)
                                (re-search-backward "^if __name__ == \"__main__\":" nil t))))
+
+          (message "Import line: %s, Position: %s, Main guard pos: %s"
+                  import-line pos main-guard-pos)
+
           (when (and import-line pos)
             (let ((indented-line
                    (if (and main-guard-pos (> pos main-guard-pos))
-                       (concat "    " import-line)
+                       (progn
+                         (message "Indenting line due to main guard")
+                         (concat "    " import-line))
                      import-line)))
+              (message "Adding line to position %d: %s" pos indented-line)
               (push indented-line (gethash pos import-positions))
               (setq current-offset (+ current-offset
                                     (1+ (length indented-line))))))))
 
+      (message "Final import positions hash table: %s"
+              (let ((contents '()))
+                (maphash (lambda (k v) (push (cons k v) contents))
+                        import-positions)
+                contents))
+
       (save-excursion
         (maphash (lambda (pos lines)
+                  (message "Inserting at position %d: %s" pos lines)
                   (goto-char pos)
                   (dolist (line (reverse lines))
                     (insert line "\n")))
                 import-positions)
 
         (goto-char (point-min))
+        (message "Cleaning up multiple newlines")
         (while (re-search-forward "\n\n\n+" nil t)
           (replace-match "\n\n"))))))
 
