@@ -1,4 +1,4 @@
-# Emacs python import manager
+# Emacs Python Import Manager
 
 An Emacs package that automatically manages Python imports
 
