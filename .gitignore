@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+__pycache__
+predefined-packages/.old
+=======
 
 ### Source: /home/ywatanabe/.git-templates/.gitignore-templates/Custom/Specific.gitignore ###
 # Please add files here
@@ -616,3 +620,6 @@ flycheck_*.el
 ### Source: /home/ywatanabe/.git-templates/.gitignore-templates/Custom/SQL.gitignore ###
 **/*.db
 .old
+>>>>>>> 47c00fb01f040ff02b7ad812aac5c04c720a121f
+.old
+__pycache__/

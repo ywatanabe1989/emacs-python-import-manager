@@ -1,6 +1,6 @@
 ;;; -*- coding: utf-8; lexical-binding: t -*-
 ;;; Author: ywatanabe
-;;; Timestamp: <2025-04-25 19:15:11>
+;;; Timestamp: <2025-04-25 19:21:01>
 ;;; File: /home/ywatanabe/.emacs.d/lisp/python-import-manager/python-import-manager.el
 
 ;;; Copyright (C) 2025 Yusuke Watanabe (ywatanabe@alumni.u-tokyo.ac.jp)
@@ -25,6 +25,7 @@
 ;; Python Import Manager (PIM) automatically manages Python imports in your code.
 ;; It can detect unused imports and add missing ones based on actual usage.
 ;;; Code:
+
 (require 'async)
 (require 'json)
 (unless
@@ -1051,45 +1052,15 @@ Header is defined as consecutive comment lines starting from the beginning."
       ((imports
         (pim--collect-all-imports)))
     (pim--insert-imports-at-top imports)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; All-in-One function
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (defun pim-fix-imports
-;;     ()
-;;   "Fix imports in current buffer."
-;;   (interactive)
-;;   (message "pim-fix-imports called")
-;;   (let
-;;       ((original-point
-;;         (point)))
-;;     (pim--update-import-list)
-;;     (pim--split-imports)
-;;     (pim-delete-unused)
-;;     (pim-delete-duplicated)
-;;     (pim-insert-missed)
-;;     (python-isort-buffer)
-;;     (blacken-buffer)
-;;     (goto-char original-point)))
-
-;; (defun pim-fix-imports
-;;     ()
-;;   "Fix imports in current buffer."
-;;   (interactive)
-;;   (message "pim-fix-imports called")
-;;   ;; Save current cursor position and restore it after execution
-;;   (save-window-excursion
-;;     (pim--update-import-list)
-;;     (pim--split-imports)
-;;     (pim-delete-unused)
-;;     (pim-delete-duplicated)
-;;     (pim-insert-missed)
-;;     (python-isort-buffer)
-;;     (blacken-buffer)))
 
 (defun pim-fix-imports ()
   "Fix imports in current buffer, preserving window configuration and point using a marker."
   (interactive)
-  (message "pim-fix-imports called")
+  ;; (message "pim-fix-imports called")
   (save-window-excursion
     (pim--update-import-list)
     (pim--split-imports)
