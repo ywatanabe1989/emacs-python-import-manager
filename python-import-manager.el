@@ -1,9 +1,10 @@
 ;;; -*- coding: utf-8; lexical-binding: t -*-
 ;;; Author: ywatanabe
-;;; Timestamp: <2025-04-24 09:51:16>
+;;; Timestamp: <2025-04-25 19:15:11>
 ;;; File: /home/ywatanabe/.emacs.d/lisp/python-import-manager/python-import-manager.el
 
 ;;; Copyright (C) 2025 Yusuke Watanabe (ywatanabe@alumni.u-tokyo.ac.jp)
+
 
 ;; Author: Yusuke Watanabe (ywatanabe@alumni.u-tokyo.ac.jp)
 ;; Version: 1.0.0
@@ -1089,31 +1090,20 @@ Header is defined as consecutive comment lines starting from the beginning."
   "Fix imports in current buffer, preserving window configuration and point using a marker."
   (interactive)
   (message "pim-fix-imports called")
-  (let ((original-marker (point-marker)))
-                                        ; Create a marker at the current point
-    ;; Use save-window-excursion mainly for window scroll state now
-    (save-window-excursion
-      (message "Running PIM steps...")
-      (pim--update-import-list)
-      (pim--split-imports)
-      (pim-delete-unused)
-      (pim-delete-duplicated)
-      (pim-insert-missed)
-      (message "Running isort...")
-      (python-isort-buffer)
-      (message "Running blacken...")
-      (blacken-buffer)
-      ;; Restore point specifically using the marker AFTER formatting
-      (goto-char original-marker)
-      (message "PIM finished. Point restored to marker position: %d"
-               (point)))
-    ;; Clean up the marker
-    (set-marker original-marker nil)))
+  (save-window-excursion
+    (pim--update-import-list)
+    (pim--split-imports)
+    (pim-delete-unused)
+    (pim-delete-duplicated)
+    (pim-insert-missed)
+    (python-isort-buffer)
+    (blacken-buffer)))
 
 ;;;###autoload
 
 (defalias 'pim 'pim-fix-imports)
 ;;; python-import-manager.el ends here
+
 
 (provide 'python-import-manager)
 
