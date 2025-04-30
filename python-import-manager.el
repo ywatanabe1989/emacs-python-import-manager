@@ -1,6 +1,6 @@
 ;;; -*- coding: utf-8; lexical-binding: t -*-
 ;;; Author: ywatanabe
-;;; Timestamp: <2025-04-25 19:21:01>
+;;; Timestamp: <2025-04-30 12:13:04>
 ;;; File: /home/ywatanabe/.emacs.d/lisp/python-import-manager/python-import-manager.el
 
 ;;; Copyright (C) 2025 Yusuke Watanabe (ywatanabe@alumni.u-tokyo.ac.jp)
@@ -132,7 +132,9 @@
 (require 'pim-imports-signal-media)
 (require 'pim-imports-standard)
 (require 'pim-imports-web)
+
 ;; Merge all imports into one list
+
 (defvar pim-import-list nil "All predefined Python imports combined.")
 (setq pim-import-list
       (append pim-imports-custom
@@ -187,6 +189,7 @@
               (or args pim-flake8-args)
               (list temp-file)))
       (buffer-string))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Deletion
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -277,6 +280,7 @@
     (while
         (re-search-forward "^from .* import *$" nil t)
       (kill-whole-line))))
+
 ;;;###autoload
 (defun pim-delete-unused
     ()
@@ -289,6 +293,7 @@
         (module unused-modules)
       (pim--remove-module module))
     (pim--cleanup-imports)))
+
 ;;;###autoload
 (defun pim-delete-duplicated
     ()
@@ -464,8 +469,8 @@
 ;;         (while (re-search-forward "\n\n\n+" nil t)
 ;;           (replace-match "\n\n"))))))
 ;; Implement pim--find-header-end
-;;;###autoload
 
+;;;###autoload
 (defun pim--find-header-end
     ()
   "Find the end position of the header comment section in a Python file.
@@ -656,8 +661,8 @@ Header is defined as consecutive comment lines starting from the beginning."
 ;;         (goto-char (point-min))
 ;;         (while (re-search-forward "\n\n\n+" nil t)
 ;;           (replace-match "\n\n"))))))
-;;;###autoload
 
+;;;###autoload
 (defun pim-insert-missed
     ()
   "Insert missing imports from predefined list based on undefined names."
@@ -924,51 +929,88 @@ Header is defined as consecutive comment lines starting from the beginning."
        (format "from %s import %s" module imp))
      imports "\n")))
 
-(defun pim--split-imports-multiline
-    ()
+;; (defun pim--split-imports-multiline
+;;     ()
+;;   "Split multiline imports into separate lines."
+;;   (interactive)
+;;   (let
+;;       ((imports
+;;         (pim--find-multiple-imports-to-temp-buffer))
+;;        (count 0)
+;;        (limit 100))
+;;     (save-excursion
+;;       (goto-char
+;;        (point-min))
+;;       (while
+;;           (and
+;;            (< count limit)
+;;            (re-search-forward
+;;             "^from \\([^(\n]+\\) import *( *\n?\\([^)]+\\)[[:space:]]*)"
+;;             nil t))
+;;         (message "Processing import #%d at position %d" count
+;;                  (point))
+;;         (let
+;;             ((start
+;;               (match-beginning 0))
+;;              (end
+;;               (match-end 0)))
+;;           (when-let*
+;;               ((module-imports
+;;                 (pim--extract-module-and-imports
+;;                  (match-string 0)))
+;;                (replacement
+;;                 (pim--format-imports module-imports)))
+;;             (delete-region start end)
+;;             (goto-char start)
+;;             (insert replacement)
+;;             (goto-char
+;;              (+ start
+;;                 (length replacement)))))
+;;         (setq count
+;;               (1+ count))))))
+
+;; (defun pim--split-imports
+;;     ()
+;;   (interactive)
+;;   (pim--split-imports-one-line)
+;;   (pim--split-imports-multiline))
+
+(defun pim--split-imports-multiline ()
   "Split multiline imports into separate lines."
   (interactive)
-  (let
-      ((imports
-        (pim--find-multiple-imports-to-temp-buffer))
-       (count 0)
-       (limit 100))
+  (let ((count 0)
+        (limit 100))
     (save-excursion
-      (goto-char
-       (point-min))
-      (while
-          (and
-           (< count limit)
-           (re-search-forward
-            "^from \\([^(\n]+\\) import *( *\n?\\([^)]+\\)[[:space:]]*)"
-            nil t))
-        (message "Processing import #%d at position %d" count
-                 (point))
-        (let
-            ((start
-              (match-beginning 0))
-             (end
-              (match-end 0)))
+      (goto-char (point-min))
+      (while (and (< count limit)
+                  (re-search-forward
+                   "^from \\([^(\n]+\\) import *( *\n?\\([^)]+\\)[[:space:]]*)"
+                   nil t))
+        (message "Processing import #%d at position %d" count (point))
+        (let ((start (match-beginning 0))
+              (end (match-end 0)))
           (when-let*
               ((module-imports
-                (pim--extract-module-and-imports
-                 (match-string 0)))
+                (pim--extract-module-and-imports (match-string 0)))
                (replacement
                 (pim--format-imports module-imports)))
             (delete-region start end)
             (goto-char start)
             (insert replacement)
-            (goto-char
-             (+ start
-                (length replacement)))))
-        (setq count
-              (1+ count))))))
+            (goto-char (+ start (length replacement)))))
+        (setq count (1+ count)))))
+  ;; Clean up the temporary buffer
+  (when (get-buffer "*pim-multiple-imports*")
+    (kill-buffer "*pim-multiple-imports*")))
 
-(defun pim--split-imports
-    ()
+(defun pim--split-imports ()
   (interactive)
   (pim--split-imports-one-line)
-  (pim--split-imports-multiline))
+  (pim--split-imports-multiline)
+  ;; Clean up any remaining temporary buffer
+  (when (get-buffer "*pim-single-line-imports*")
+    (kill-buffer "*pim-single-line-imports*")))
+
 ;; (defun pim--find-multiple-imports-to-temp-buffer ()
 ;;   "Find multiple imports and write them to a temporary buffer."
 ;;   (interactive)
@@ -1043,6 +1085,7 @@ Header is defined as consecutive comment lines starting from the beginning."
     (insert
      (string-join imports "\n")
      "\n\n")))
+
 ;;;###autoload
 (defun pim-consolidate-imports
     ()
@@ -1062,17 +1105,62 @@ Header is defined as consecutive comment lines starting from the beginning."
   (interactive)
   ;; (message "pim-fix-imports called")
   (save-window-excursion
-    (pim--update-import-list)
-    (pim--split-imports)
-    (pim-delete-unused)
-    (pim-delete-duplicated)
-    (pim-insert-missed)
-    (python-isort-buffer)
-    (blacken-buffer)))
+    (let ((is-interactive (called-interactively-p 'any))
+          (needs-save (and buffer-file-name (buffer-modified-p))))
+      ;; Only save at beginning when explicitly called by user
+      (when (and is-interactive needs-save)
+        (save-buffer))
+
+      (pim--update-import-list)
+      (pim--split-imports)
+      (pim-delete-unused)
+      (pim-delete-duplicated)
+      (pim-insert-missed)
+      (python-isort-buffer)
+      (blacken-buffer)
+
+      ;; Always save after fix if called interactively
+      (when (and is-interactive buffer-file-name)
+        (save-buffer)))))
+
+;; (defun pim-fix-imports ()
+;;   "Fix imports in current buffer, preserving window configuration and point using a marker."
+;;   (interactive)
+;;   ;; (message "pim-fix-imports called")
+;;   (save-window-excursion
+;;     (pim--update-import-list)
+;;     (pim--split-imports)
+;;     (pim-delete-unused)
+;;     (pim-delete-duplicated)
+;;     (pim-insert-missed)
+;;     (python-isort-buffer)
+;;     (blacken-buffer)))
 
 ;;;###autoload
-
 (defalias 'pim 'pim-fix-imports)
+
+;;;###autoload
+(defun pim--process-file (file_path)
+  "Open FILE_PATH invisibly, run `pim-fix-imports', save and kill the buffer."
+  (when (file-readable-p file_path)
+    (let ((buf (find-file-noselect file_path)))
+      (with-current-buffer buf
+        (save-buffer))
+      (pim-fix-imports)
+      (kill-buffer buf))))
+
+;;;###autoload
+(defun pim-dired-fix-imports (&optional files)
+  "Apply `pim-fix-imports' to marked FILES in Dired.
+When called interactively, use `dired-get-marked-files'."
+  (interactive (list (dired-get-marked-files)))
+  (dolist (fp files)
+    (message "PIM: processing %s" fp)
+    (pim--process-file fp))
+  (message "PIM: finished for %d file(s)" (length files)))
+
+(defalias 'pim-dired 'pim-dired-fix-imports)
+
 ;;; python-import-manager.el ends here
 
 
